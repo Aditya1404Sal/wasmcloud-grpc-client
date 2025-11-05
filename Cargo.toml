@@ -1,0 +1,18 @@
+[package]
+name = "wasi-grpc"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0 WITH LLVM-exception"
+description = "gRPC clients on Spin / WASI Hyperium"
+
+[dependencies]
+anyhow = "1"
+http = "1.0.0"
+tonic = { version = "0.13.1", features = ["prost", "router"], default-features = false}
+tower-service = { version = "0.3.2" }
+wasmcloud-component = "0.2.0"
+wasi = "0.13.1"
+bytes = "1.10.1"
+http-body = "1.0.1"
+http-body-util = "0.1.2"
+hyper = "1.7.0"
