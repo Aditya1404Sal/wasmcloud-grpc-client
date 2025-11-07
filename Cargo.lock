@@ -606,22 +606,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasi-grpc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "http",
- "http-body",
- "http-body-util",
- "hyper",
- "tonic",
- "tower-service",
- "wasi",
- "wasmcloud-component",
-]
-
-[[package]]
 name = "wasm-encoder"
 version = "0.217.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -661,6 +645,23 @@ dependencies = [
  "uuid",
  "wasi",
  "wit-bindgen",
+]
+
+[[package]]
+name = "wasmcloud-grpc-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "tonic",
+ "tower-service",
+ "tracing",
+ "wasi",
+ "wasmcloud-component",
 ]
 
 [[package]]
