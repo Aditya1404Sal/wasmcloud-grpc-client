@@ -79,6 +79,10 @@ where
                         debug!(header = name_str, "skipping HTTP/1.1 connection header");
                         continue;
                     }
+                    "te" => {
+                        debug!("Skipping Forbidden header");
+                        continue;
+                    }
                     _ => {}
                 }
 
@@ -192,15 +196,14 @@ impl HttpBody for WasiResponseBody {
         match self.input_stream.blocking_read(8192) {
             Ok(chunk) if chunk.is_empty() => Poll::Ready(None),
             Ok(chunk) => Poll::Ready(Some(Ok(http_body::Frame::data(Bytes::from(chunk))))),
-            Err(wasmcloud_component::wasi::io::streams::StreamError::Closed) => {
-                Poll::Ready(None)
-            }
+            Err(wasmcloud_component::wasi::io::streams::StreamError::Closed) => Poll::Ready(None),
             Err(e) => {
                 warn!(error = ?e, "failed to read from response stream");
                 Poll::Ready(Some(Err(Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     format!("stream read error: {e:?}"),
-                )) as Box<dyn std::error::Error + Send + Sync>)))
+                ))
+                    as Box<dyn std::error::Error + Send + Sync>)))
             }
         }
     }
