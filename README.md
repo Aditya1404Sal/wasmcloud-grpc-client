@@ -1,5 +1,3 @@
-# NOTE : This is a WIP, DO NOT USE.
-
 # wasmcloud-grpc-client
 
 Enables **gRPC clients** to work inside **wasmCloud** components using the standard `wasi:http/outgoing-handler` interface.
@@ -61,7 +59,6 @@ wit_world = "http-client"
 ### 4. Call your gRPC service from a wasmCloud component
 
 ```rust
-use anyhow::Context;
 use tonic::Request;
 use wasmcloud_grpc_client::GrpcEndpoint;
 
@@ -80,30 +77,53 @@ impl wasmcloud_component::http::Server for Component {
     ) -> wasmcloud_component::http::Result<
         wasmcloud_component::http::Response<impl wasmcloud_component::http::OutgoingBody>
     > {
-        // Parse the gRPC endpoint URI
-        let endpoint_uri = "http://[::1]:50051"
-            .parse()
-            .context("Failed to parse endpoint URI")?;
-        
-        // Create the gRPC endpoint wrapper
-        let endpoint = GrpcEndpoint::new(endpoint_uri);
-        
-        // Create the gRPC client
-        let mut client = GreeterClient::new(endpoint);
+        // Use tokio to run the async code in a blocking context
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| wasmcloud_component::http::ErrorCode::InternalError(
+                Some(format!("failed to create tokio runtime: {}", e))
+            ))?;
 
-        // Make the gRPC call
-        let request = Request::new(HelloRequest {
-            name: "wasmCloud".to_string(),
-        });
+        runtime.block_on(async {
+            eprintln!("Starting gRPC client...");
+            
+            // Parse the gRPC endpoint URI from config or use default
+            let endpoint_uri = std::env::var("GRPC_SERVER_URI")
+                .unwrap_or_else(|_| "http://[::1]:50051".to_string());
+            
+            eprintln!("Connecting to gRPC server: {}", endpoint_uri);
+            
+            let endpoint_uri = endpoint_uri
+                .parse()
+                .map_err(|e| wasmcloud_component::http::ErrorCode::InternalError(
+                    Some(format!("failed to parse endpoint URI: {}", e))
+                ))?;
+            
+            // Create the gRPC endpoint wrapper
+            let endpoint = GrpcEndpoint::new(endpoint_uri);
+            
+            // Create the gRPC client
+            let mut client = GreeterClient::new(endpoint);
 
-        let response = client
-            .say_hello(request)
-            .await
-            .context("gRPC call failed")?;
+            // Make the gRPC call
+            let request = Request::new(HelloRequest {
+                name: "wasmCloud".to_string(),
+            });
 
-        let message = response.into_inner().message;
+            eprintln!("Sending gRPC request...");
+            let response = client
+                .say_hello(request)
+                .await
+                .map_err(|e| wasmcloud_component::http::ErrorCode::InternalError(
+                    Some(format!("gRPC call failed: {}", e))
+                ))?;
 
-        Ok(wasmcloud_component::http::Response::new(message))
+            let message = response.into_inner().message;
+            eprintln!("gRPC Response: {}", message);
+
+            Ok(wasmcloud_component::http::Response::new(message))
+        })
     }
 }
 
@@ -185,6 +205,8 @@ The wasmCloud runtime handles:
 ## 📚 Examples
 
 TODO
+
+## Note : This crate passes the "works on my machine" criteria
 
 ## 🤝 Contributing
 
